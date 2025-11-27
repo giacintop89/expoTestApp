@@ -1,5 +1,7 @@
+// Default export (React) plus named exports (hooks) pulled in via object destructuring.
 import React, { useEffect, useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+// Named imports from react-native let us reference components with <Component /> syntax.
 import {
   Platform,
   ScrollView,
@@ -9,6 +11,7 @@ import {
   View,
 } from 'react-native';
 
+// Static sample data for the dashboard cards and chart.
 const voltageTrend = [12.1, 11.9, 12.3, 12.6, 12.4, 12.7, 12.5];
 const sensorCards = [
   { label: 'Temperature', value: '24.5 C', detail: 'Stable', accent: '#0ea5e9' },
@@ -24,33 +27,47 @@ const activityFeed = [
 ];
 
 export default function App() {
+  // useState returns a pair [state, setter]; array destructuring pulls them into relays/setRelays.
+  // Relay state mimics hardware toggles for quick visual feedback.
   const [relays, setRelays] = useState({
     pump: true,
     fan: false,
     lights: true,
     aux: false,
   });
+  // Same pattern here; boolean drives the Auto/Manual pill.
   const [autoMode, setAutoMode] = useState(true);
 
+  // Normalize voltage readings into bar heights while keeping a minimum size for visibility.
+  // useMemo caches the derived array until dependencies change (empty array = run once).
   const bars = useMemo(() => {
     const max = Math.max(...voltageTrend);
     return voltageTrend.map((value, idx) => {
+      // map returns a new array; arrow function returns an object literal for each bar.
       const height = Math.max(24, (value / max) * 90);
+      // Template literal (`...`) injects the index to make a label like "T1".
       return { value, height, label: `T${idx + 1}` };
     });
   }, []);
 
+  // Toggle a single relay flag by key.
+  // Functional setState (prev => ...) ensures we read the latest state; spread clones the object.
   const toggleRelay = (key) => setRelays((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Keep browser tab title in sync when running on web.
+  // useEffect with an empty dependency array runs once on mount; guard prevents document access on native.
   useEffect(() => {
     if (Platform.OS === 'web') {
       document.title = 'expoTestApp';
     }
   }, []);
 
+  // JSX lets us mix XML-like tags with JS. Parentheses here group the return value.
   return (
     <View style={styles.screen}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scroll}>
+        {/* Hero summary with system status, uptime, and quick stats */}
         <View style={styles.heroCard}>
           <View style={styles.heroRow}>
             <View style={styles.heroText}>
@@ -84,9 +101,12 @@ export default function App() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Sensors</Text>
+          {/* Sensor tiles mirror the latest telemetry snapshot */}
           <View style={styles.grid}>
+            {/* map renders a component for each item; key helps React track list identity */}
             {sensorCards.map((item) => (
               <View key={item.label} style={styles.card}>
+                {/* Style arrays merge base styles with overrides; later entries win */}
                 <View style={[styles.tag, { backgroundColor: item.accent + '20' }]}>
                   <View style={[styles.tagDot, { backgroundColor: item.accent }]} />
                   <Text style={[styles.tagText, { color: item.accent }]}>{item.label}</Text>
@@ -103,6 +123,7 @@ export default function App() {
             <Text style={styles.sectionTitle}>Power trend</Text>
             <Text style={styles.sectionHint}>Voltage over last syncs</Text>
           </View>
+          {/* Minimal bar chart to avoid pulling in a charting dependency */}
           <View style={styles.chartCard}>
             <View style={styles.chartRow}>
               {bars.map((bar) => (
@@ -129,10 +150,12 @@ export default function App() {
             <Text style={styles.sectionTitle}>Relays and modes</Text>
             <TouchableOpacity
               style={[styles.switchPill, autoMode ? styles.switchOn : styles.switchOff]}
+              // Inline arrow function flips the boolean; ternary picks matching styles.
               onPress={() => setAutoMode((prev) => !prev)}
               activeOpacity={0.85}
             >
               <View style={styles.switchKnobWrapper}>
+                {/* Logical AND means "add this style only when autoMode is true" */}
                 <View style={[styles.switchKnob, autoMode && styles.switchKnobOn]} />
               </View>
               <Text style={[styles.switchLabel, autoMode ? styles.switchLabelOn : styles.switchLabelOff]}>
@@ -141,6 +164,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
           <View style={styles.controlsCard}>
+            {/* Relay rows mirror physical toggles and show live state */}
             {Object.entries(relays).map(([key, isOn]) => (
               <TouchableOpacity
                 key={key}
@@ -164,6 +188,7 @@ export default function App() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent activity</Text>
+          {/* Lightweight activity log to verify commands and telemetry updates */}
           <View style={styles.activityCard}>
             {activityFeed.map((item, idx) => (
               <View key={item.label} style={[styles.activityRow, idx !== activityFeed.length - 1 && styles.activityDivider]}>
@@ -185,6 +210,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  // Each key here is a style object; referenced via styles.someName.
   screen: {
     flex: 1,
     backgroundColor: '#e9edf5',
